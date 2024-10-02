@@ -1,0 +1,56 @@
+{
+"STEPS":
+                 {
+                     "_comment": "STEP1=ENSEMBLE DEFINITION; STEP2=TSUNAMI SIMULATIONS; STEP3=HAZARD AGGREGATION; STEP4=ALERT LEVELS; STEP5=VISUALIZATION", 
+                     "step1":    True,
+                     "step2":    True,
+                     "step3":    True,
+                     "step4":    True,
+                     "step5":    False
+                 },
+
+"SETTINGS":
+                 {
+                     "_comment": "domain --> Mediterranean: med-tsumaps; Pacific: cheese-pacific",
+                     "domain": "med-tsumaps",
+                     "sigma": 1.3,
+                     "_comment": "Percentiles (exceedance probability) used for hazard maps. Example: [2, 16, 50, 84, 98] ",
+                     "percentiles": [2, 16, 50, 84, 98],
+                     "_comment": "tsu_sim -->  to_run: run t-hysea; completed: simulations results aready in IO folder; precomputed: simulations from hazard (only domain=med-tsumaps)",
+                     "tsu_sim": "precomputed",
+                     "_comment": "simulation domain extension (if tsu_sim=torun): local; regional; global",
+                     "sim_domain": "regional",
+                    "_comment": "UCmode --> if True:  Urgent Computing mode activated",
+                     "UCmode": False,
+                     "_comment": "TEWmode --> if True: options valid if running in the monitoring room",
+                     "TEWmode": False,
+                     "_comment": "simulation length in hours (needed if tsu_sim=to_run): 8h in regional domain (med); 6h in local domain",
+                     "propagation": 8,
+                     "_comment": "Sampling ensemble - sampling mode --> None: No sampling (i.e., use all scenarios in the ensemble); SDE: Sampling Discretized Ensemble",
+                     "sampling mode": "None",
+                     "_comment": "Sampling ensemble - sampling type --> MC: Classic Monte Carlo; LH: Latin Hypercube",
+                     "sampling type": "LH",
+                     "_comment": "Sampling ensemble - target number of scenarios for sampling",
+                     "number of scenarios": 500,
+                     "_comment": "Optional for computing the PDF",
+                     "compute_pdf": False,
+                     "_comment": "Optional for writing output from step3 in netcdf format",
+                     "save_nc": False
+	             },
+
+"HPC CLUSTER":
+	             {
+                     "_comment": "GPU cluster where tsunami simulations are performed (mercalli/leonardo)",
+                     "_comment": "If cluster=mercalli @INGV => Scheduler: PBS Pro; MC HySEA 3.9.0",
+                     "_comment": "If cluster=leonardo @CINECA => Scheduler: SLURM; MC HySEA 3.9.0; partition and account must be specified",
+                     "cluster": "mercalli",
+                     "_comment": "username on the hpc cluster, if remote connection is requested",
+	             "username": "xxx",
+                     "_comment": "script (on the HPC cluster, w/ path) containing commands to load the python environment when submitting jobs for running HySEA simulations",
+                     "env_file": "/path-to-script/load_env.source",
+	             "leonardo_account": "DTGEO_T1_2",
+	             "leonardo_partition": "boost_usr_prod",
+	             "leonardo_quality": "normal"
+	             }
+
+}
