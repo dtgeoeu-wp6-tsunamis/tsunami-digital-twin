@@ -1,0 +1,3 @@
+module load spack/0.19.1-d71 
+spack env activate /leonardo/home/userexternal/mvolpe00/spack_and_compss/spack-compss/leonardo/spackenv/
+spack load compss

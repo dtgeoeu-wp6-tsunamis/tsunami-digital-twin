@@ -24,7 +24,7 @@ def parse_ptf_stdin():
     parser.add_argument('--input_workflow',    default = None,        help = 'Input file for workflow. Default: None')
     parser.add_argument('--mode',              default = 'event',     help = 'event: generate message for a single specific event (needs --event to be specified)' + \
                                                                              'rabbit: connect to the rabbit-mq and consume real-time events. Default = event')
-    parser.add_argument('--event',             default = None,        help = 'seismic event parameter file with path. Default = None')
+    parser.add_argument('--event',             default = None,        help = 'seismic event parameter file. Default = None')
     parser.add_argument('--event_format',      default = 'json',      help = 'file format for event parameter file ([json]/xml/csv).')
     parser.add_argument('--rabbit_mode',       default = 'save',      help = 'rabbit-mq start sonsuming mode. save: hold and process the existing queue. clean: empty queue befor consuming. Default=save')
     parser.add_argument('--ttt',               default = False,       help = 'Use of ttt. Default False')
@@ -67,8 +67,8 @@ def parse_ptf_stdin():
 
     # if any
     if not sys.argv[1:]:
-        print ("Use -h or --help option for Help")
-        sys.exit(0)
+           print ("Use -h or --help option for Help")
+           sys.exit(0)
 
     # first check on agrument consistency
     args = check_arguments(args=args)
@@ -121,10 +121,10 @@ def check_arguments(**kwargs):
         print(args.event_format + " event file format not recognized. Exit")
         sys.exit()
 
-    # mode and event check. if mode == event, ann event file MUST be provided
-    if(args.mode == 'event' and args.event == None):
-        print('Please provide an event file (use --event)')
-        sys.exit()
+    # # mode and event check. if mode == event, ann event file MUST be provided
+    # if(args.mode == 'event' and args.event == None):
+    #     print('Please provide an event file (use --event)')
+    #     sys.exit()
 
 
     # args.compute_runUp = args.compute_runUp[0:1].lower()

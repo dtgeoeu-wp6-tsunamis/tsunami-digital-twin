@@ -37,7 +37,7 @@ def load_event_dict(**kwargs):
 
    # Load the event parameters from json file from EarlyEst
     print('Load event parameters')
-    jsn_object = read_event_parameters(event         = workflow_dict['event_file'] ,
+    jsn_object = read_event_parameters(event         = workflow_dict['stat_file'] ,
                                        event_format  = event_format,
                                       # routing_key   = 'INT.QUAKE.CAT',
                                       # geocode_area  = geocode_area,
@@ -64,7 +64,7 @@ def load_event_dict(**kwargs):
         print('This event has been already processed; '
               'previous results will be overwritten.')
 
-    cp = shutil.copy(workflow_dict['event_file'], workflow_dict['workdir'])
+    cp = shutil.copy(workflow_dict['stat_file'], workflow_dict['workdir'])
 
     event_parameters = create_event_dict(cfg           = Config,
                                          workflow_dict = workflow_dict,

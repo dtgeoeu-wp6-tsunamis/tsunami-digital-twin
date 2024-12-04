@@ -19,6 +19,9 @@ def update_workflow_dict(**kwargs):
     args   = kwargs.get('args', None)
     wd     = kwargs.get('workflow_dict', None)
 
+    if args.event != None:
+        wd['event_name'] = args.event
+
     if args.sigma != None:
         wd['sigma'] = float(args.sigma)
 
@@ -28,6 +31,8 @@ def update_workflow_dict(**kwargs):
     if args.hazard_mode != None:
         wd['hazard_mode'] = args.hazard_mode
 
+    # wd['stat_file'] = os.path.join(wd['inpdir'], 'earlyEst', wd['event_name'] + '_stat.json')
+    wd['stat_file'] = os.path.join(wd['eventdir'], wd['event_name'] + '.json')
     # Moved definition of wd['workdir'] in ptf_load_event/load_event_dict, after .json of event is processed 
     # to name the workdir folder with the eventID
     
@@ -45,14 +50,13 @@ def create_workflow_dict(**kwargs):
     Config = kwargs.get('Config', None)
 
     wd = dict()
-
-    wd['event_file'] = args.event
-    wd['event_name'] = os.path.basename(wd['event_file']).split('.')[0]
     
     inpjson = args.input_workflow
     f = open(inpjson, 'r').read()
     jsn_object = eval(f)
 
+    #wd['homedir'] = jsn_object['wf_path']
+    #wd['wf_path'] = os.getcwd()
     wd['step1'] = jsn_object['STEPS']['step1']    # ENSEMBLE DEFINITION
     wd['step2'] = jsn_object['STEPS']['step2']    # TSUNAMI SIMULATIONS
     wd['step3'] = jsn_object['STEPS']['step3']    # HAZARD AGGREGATION
@@ -60,7 +64,7 @@ def create_workflow_dict(**kwargs):
     wd['step5'] = jsn_object['STEPS']['step5']    # VISUALIZATION
 
     wd['domain'] = jsn_object['SETTINGS']['domain']
-    # wd['event_name'] = jsn_object['SETTINGS']['event_name'] # only from command line
+    wd['event_name'] = jsn_object['SETTINGS']['event_name']
     # 2020_1030_samos => sigma=0.7 for testing
     # 2018_1025_zante => sigma=1.3 for testing
     wd['sigma'] = jsn_object['SETTINGS']['sigma']
@@ -109,7 +113,7 @@ def create_workflow_dict(**kwargs):
 
     wd['wf_path'] = Config.get('pyptf', 'wf_path')
     wd['inpdir'] = Config.get('pyptf', 'data_path')
-    # wd['event_path'] = Config.get('pyptf', 'event_path')
+    wd['eventdir'] = Config.get('pyptf', 'event_path')
 
     # for sampling
     wd['sampling_mode'] = jsn_object['SETTINGS']['sampling mode']

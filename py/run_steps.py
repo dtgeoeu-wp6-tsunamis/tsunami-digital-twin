@@ -6,12 +6,14 @@ import sys
 import time
 import glob
 
-import step1_run
-import step2_simulations
-import step2_precomputed
-import step3_run
-import step4_run
-import step5_run
+sys.path.append(os.getcwd() + '/py')
+#import step1_run
+#import step2_simulations
+import step2_simulations_compss
+#import step2_precomputed
+#import step3_run
+#import step4_run
+#import step5_run
 from ptf_mix_utilities import check_previous_versions
 
 def create_output_names(**kwargs):
@@ -108,9 +110,14 @@ def main(**kwargs):
             print('Performing on-the-fly tsunami simulations')
 
             #step2_simulations.main(cfg_file      = cfg_file,
-            step2_simulations.main(workflow_dict = workflow_dict,
-                                   file_simBS    = file_simBS,
-                                   file_simPS    = file_simPS)
+# TESTING COMPSS
+#            step2_simulations.main(workflow_dict = workflow_dict,
+#                                   file_simBS    = file_simBS,
+#                                   file_simPS    = file_simPS)
+            
+            step2_simulations_compss.main(workflow_dict = workflow_dict,
+                                          file_simBS    = file_simBS,
+                                          file_simPS    = file_simPS)
                                    
 
         elif workflow_dict['tsu_sim'] == 'precomputed':   # loading pre-computed scenarios

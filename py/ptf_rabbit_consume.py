@@ -144,7 +144,7 @@ def pass2procedure(ch, method, properties, in_json, cfg_file, Config, workflow_d
     workflow_dict['eventID'] = str(jsn_object['features'][0]['properties']['eventId'])
     workflow_dict['originID'] = str(jsn_object['features'][0]['properties']['originId'])
     workflow_dict['version'] = str(jsn_object['features'][0]['properties']['version'])
-    workflow_dict['event_file'] = None
+    workflow_dict['stat_file'] = None
     workflow_dict['uniqueID'] = workflow_dict['eventID'] + '_' + workflow_dict['originID'] + '_' + workflow_dict['version']
     workflow_dict['workflow_dictionary'] = workflow_dict['workflow_dictionary_root'] + workflow_dict['uniqueID']
     workflow_dict['event_dictionary'] = workflow_dict['event_dictionary_root'] + workflow_dict['uniqueID']
