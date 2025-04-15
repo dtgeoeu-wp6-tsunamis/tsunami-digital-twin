@@ -13,9 +13,6 @@
                  {
                      "_comment": "domain --> Mediterranean: med-tsumaps; Pacific: cheese-pacific",
                      "domain": "med-tsumaps",
-                     "sigma": 1.3,
-                     "_comment": "Percentiles (exceedance probability) used for hazard maps. Example: [2, 16, 50, 84, 98] ",
-                     "percentiles": [2, 16, 50, 84, 98],
                      "_comment": "tsu_sim -->  to_run: run t-hysea; completed: simulations results aready in IO folder; precomputed: simulations from hazard (only domain=med-tsumaps)",
                      "tsu_sim": "precomputed",
                      "_comment": "simulation domain extension (if tsu_sim=torun): local; regional; global",
@@ -44,13 +41,14 @@
                      "_comment": "If cluster=mercalli @INGV => Scheduler: PBS Pro; MC HySEA 3.9.0",
                      "_comment": "If cluster=leonardo @CINECA => Scheduler: SLURM; MC HySEA 3.9.0; partition and account must be specified",
                      "cluster": "mercalli",
-                     "_comment": "username on the hpc cluster, if remote connection is requested",
-	             "username": "xxx",
+                     "_comment": "username on the HPC cluster, if remote connection is requested",
+	                 "username": "xxx",
                      "_comment": "script (on the HPC cluster, w/ path) containing commands to load the python environment when submitting jobs for running HySEA simulations",
+                     "_comment": "The script must be in the HPC cluster where simulations are executed.",
                      "env_file": "/path-to-script/load_env.source",
-	             "leonardo_account": "DTGEO_T1_2",
-	             "leonardo_partition": "boost_usr_prod",
-	             "leonardo_quality": "normal"
+	                 "leonardo_account": "DTGEO_T1_2",
+	                 "leonardo_partition": "boost_usr_prod",
+	                 "leonardo_quality": "normal"
 	             }
 
 }

@@ -32,8 +32,8 @@ for i in $(seq START END); do
     fi
     params=`sed -n ${i}p $EVENTSFILE`
     export params
-    #python3 -c "import os,sys; sys.path.append('PYDIR'); import t_hysea as hysea; pline=os.environ['params']; scedir=os.environ['SIMDIR']; hysea.create_input(line = pline, seistype = 'XX', simdir_XX = 'SIM_DIR', wdir = 'WDIR', outdir = scedir, ndig = NDIG, prop = HOURS)"
-    python3 -c "import os,sys; sys.path.append('PYDIR'); import t_hysea as hysea; pline=os.environ['params']; scedir=os.environ['SIMDIR']; hysea.create_input(line = pline, seistype = 'XX', simdir_XX = 'SIM_DIR', XX_parfile_tmp = 'PARFILETMP', PS_inicond = 'INITCONDPS', wdir = 'WDIR', outdir = scedir, ndig = NDIG, prop = HOURS)"
+    #python3 -c "import os,sys; sys.path.append('PYDIR'); import tsunami_simulations as tsu_sim; pline=os.environ['params']; scedir=os.environ['SIMDIR']; tsu_sim.create_input(line = pline, seistype = 'XX', simdir_XX = 'SIM_DIR', wdir = 'WDIR', outdir = scedir, ndig = NDIG, prop = HOURS)"
+    python3 -c "import os,sys; sys.path.append('WFDIR'); import pyptf; from pyptf import tsunami_simulations as tsu_sim; pline=os.environ['params']; scedir=os.environ['SIMDIR']; tsu_sim.create_input(line = pline, seistype = 'XX', simdir = 'SIM_DIR', parfile_tmp = 'PARFILETMP', PS_inicond = 'INITCONDPS', wdir = 'WDIR', outdir = scedir, ndig = NDIG, prop = HOURS)"
     parfile=$SIMDIR/parfile.txt
     echo $parfile >> $inpfile
 done

@@ -1,4 +1,4 @@
-simulBS                      # Title
+simulXX                     # Title
 step2_bathygrid.grd         # Bathymetry file for level 0
 1                           # Initialization type (0:Sea surface displacement from file,1:Standard Okada,2:Standard Okada from file,3:Triangular Okada,4:Triangular Okada from file,5:Sea floor deformation from file,6:Gaussian)
 0                           # Apply Kajiura filter to the Okada deformation (0: no, 1: yes)

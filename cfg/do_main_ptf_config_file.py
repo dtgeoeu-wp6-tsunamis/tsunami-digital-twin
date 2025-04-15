@@ -2,13 +2,13 @@
 
 import os
 import sys
-import socket
 import shutil
-import getpass
 import argparse
-import datetime
 import configparser
 from pathlib import Path
+# import socket
+# import getpass
+# import datetime
 
 
 def parseMyLine():
@@ -88,17 +88,23 @@ def main(**kwargs):
 
     # 5: Files
     regionalization_npy            = mix_npy_files_folder + os.path.sep + 'regionalization.npy'
-    pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs.npy'
+    # pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs.npy'
+    pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs_new.npy'
     discretization_npy             = mix_npy_files_folder + os.path.sep + 'discretizations.npy'
     lookuptable_npy                = mix_npy_files_folder + os.path.sep + 'LookupTable.npy' 
     ps_bar_info                    = mix_npy_files_folder + os.path.sep + 'PSBarInfo.npy'  
     model_weight                   = mix_npy_files_folder + os.path.sep + 'ModelWeights.npy'
-    fcp_json                       = fcp_files_folder + os.path.sep + 'fcp_ws_all.json'
+    #fcp_json                       = fcp_files_folder + os.path.sep + 'fcp_ws_all.json'
+    fcp_json                       = fcp_files_folder + os.path.sep + 'fcp_ws_all_json.json'
     pois_to_fcp                    = fcp_files_folder + os.path.sep + 'pois_to_fcp.npy'
-    slab_meshes                    = path_mesh + os.path.sep + 'slab_meshes_mediterranean.npy'
+    # slab_meshes                    = path_mesh + os.path.sep + 'slab_meshes_mediterranean.npy'
+    slab_meshes_mediterranean      = path_mesh + os.path.sep + 'slab_meshes_mediterranean.npy'
+    slab_meshes_global             = path_mesh + os.path.sep + 'slab_meshes_global.npy'
     coast_shapefile                = path_coast_shapefiles + os.path.sep + '50m_land.shp'
     intensity_thresholds           = data_folder + os.path.sep + 'intensity_thresholds.npy'
-    
+    #logo
+    logo_ingv                      = data_folder + os.path.sep + 'logos/INGV_LOGO_ACRONIMO_ORIZZ.png'
+
     config['pyptf']                = {}
     config['pyptf']['wf_path']     = wf_folder
     config['pyptf']['data_path']   = data_folder
@@ -167,6 +173,7 @@ def main(**kwargs):
     config['save_ptf']['step5_hazard_curves']       = 'hazard_curves_'
     config['save_ptf']['workflow_dictionary']       = 'workflow_dictionary_'
     config['save_ptf']['event_dictionary']          = 'event_dictionary_'
+    config['save_ptf']['status_file']               = 'status_'
 #    config['save_ptf']['save_format']            = 'npy'  # may be 'hdf5'
 #    config['save_ptf']['poi_html_map']           = 'poi_map'
 #    config['save_ptf']['message_dict']           = 'message_dict'  # may be 'hdf5'
@@ -180,7 +187,8 @@ def main(**kwargs):
     
     config['Files']                                  = {}
     config['Files']['focal_mechanism_root_name']     = 'MeanProb_BS4_FocMech_Reg'
-    config['Files']['meshes_dictionary']             = slab_meshes
+    config['Files']['meshes_dictionary']             = slab_meshes_mediterranean
+    # config['Files']['meshes_dictionary']             = slab_meshes
     config['Files']['pois_to_fcp']                   = pois_to_fcp
     config['Files']['alert_message']                 = 'alert_message.txt'
     config['Files']['fcp_json']                      = fcp_json
@@ -190,7 +198,37 @@ def main(**kwargs):
     # config['Files']['fcp_time_wrk']                  = 'fcp_time.txt'
     # config['Files']['bathymetry_wrk']                = 'bathymetry_cut.b'
     # config['Files']['ttt_out_wrk']                   = 'ttt.b'
-    
+    config['Files']['logo']                          = logo_ingv
+
+    # global version
+    config['global']          = {}
+    config['global']['step1_list_SBS'] = 'step1_list_scenarios_SBS_'
+    config['global']['step1_prob_SBS'] = 'step1_prob_scenarios_SBS_'
+    config['global']['step2_hmax_sim_SBS']         = 'step2_hmax_sim_SBS_'
+    config['global']['step2_dir_sim_SBS']          = 'step2_sim_SBS_'
+    config['global']['step2_dir_log_SBS']          = 'step2_log_SBS_'
+    config['global']['step2_log_failed_SBS']       = 'step2_log_failed_SBS_'
+    config['global']['step2_list_simdir_SBS']      = 'step2_list_simdir_SBS_'
+    config['global']['step2_list_all_sims_SBS']    = 'step2_list_all_sims_SBS.txt'
+    config['global']['step2_newsimulations_SBS']   = 'step2_newsimulations_SBS_'
+    config['global']['SBS_parfile_tmp']   = wf_folder + os.path.sep + 'templates/step2_parfile_tmp.txt'
+    config['global']['meshes_dictionary'] = slab_meshes_global
+    config['global']['grid_global'] = data_folder + os.path.sep + 'topo30.grd'
+
+    # distance from epicenter for POIs selection
+    config['global']['dist_from_epi']    = '5'     # degree
+    #set steps for discretization
+    config['global']['magnitude_values'] = '[6.0, 6.5, 6.8012, 7.0737, 7.3203, 7.5435, 7.7453, 7.928, 8.0933, 8.2429, 8.3782, 8.5007, 8.6115, 8.7118, 8.8025, 8.8846, 8.9588, 9.026]'
+    config['global']['position_step']  = '25000'  # m
+    config['global']['depth_step']     = '3000'   # m
+    config['global']['strike_step']    = '10'     # degree
+    config['global']['strike_sigma']   = '20'     # degree
+    config['global']['dip_step']       = '10'     # degree
+    config['global']['dip_sigma']      = '20'     # degree
+    config['global']['rake_step']      = '10'     # degree
+    config['global']['rake_sigma']     = '20'     # degree
+    config['global']['rigidity']       = '33e9'   # Pa
+
 
     # PATHS
     # config['PATHS']                      = {}
@@ -204,11 +242,11 @@ def main(**kwargs):
     config['tsu_sims']['bathy_folder']          = bathy_folder
     # config['tsu_sims']['regional_pois']         = regional_pois
     config['tsu_sims']['regional_bathy_file']   = bathy_folder + os.path.sep + 'regional_domain.grd'
-    config['tsu_sims']['regional_pois_depth']   = bathy_folder + os.path.sep + 'regional_domain_POIs_depth.npy'
+    # config['tsu_sims']['regional_pois_depth']   = bathy_folder + os.path.sep + 'regional_domain_POIs_depth.npy'
     config['tsu_sims']['ps_inicond_med']        = 'INIT_COND_PS_TSUMAPS1.1'
     config['tsu_sims']['n_digits']              = '6'
-    config['tsu_sims']['sim_postproc']          = wf_folder + os.path.sep + 'py/step2_extract_ts.py'
-    config['tsu_sims']['final_postproc']        = wf_folder + os.path.sep + 'py/step2_create_ts_input_for_ptf.py'
+    config['tsu_sims']['sim_postproc']          = wf_folder + os.path.sep + 'pyptf/step2_extract_ts.py'
+    config['tsu_sims']['final_postproc']        = wf_folder + os.path.sep + 'pyptf/step2_create_ts_input_for_ptf.py'
     config['tsu_sims']['BS_parfile_tmp']        = wf_folder + os.path.sep + 'templates/step2_parfile_tmp.txt'
     config['tsu_sims']['PS_parfile_tmp']        = wf_folder + os.path.sep + 'templates/step2_parfile_TRI_tmp.txt'
     config['tsu_sims']['run_sim_tmp_mercalli']  = wf_folder + os.path.sep + 'sh/step2_run_tmp@mercalli.sh'
@@ -239,9 +277,11 @@ def main(**kwargs):
     # config['matrix']['basin_distance']      = '1000'
     config['matrix']['min_mag_for_message'] = '4.499'
     
-    config['bounds']         = {}
-    config['bounds']['neam'] = '([1.00, 28.00], [1.00, 32.00], [-7.00, 32.00], [-7.00, 42.00], [1.00, 42.00], [1.00, 47.00], [27.00, 47.00], [27.00, 41.15], [29.50, 41.15], [29.50, 41.00], [37.50, 41.00], [37.50, 30.00], [27.00, 30.00], [27.00, 28.00])'
+    config['bounds'] = {}
+    config['bounds']['cat_area'] = '([1.00, 28.00], [1.00, 32.00], [-7.00, 32.00], [-7.00, 42.00], [1.00, 42.00], [1.00, 47.00], [27.00, 47.00], [27.00, 41.15], [29.50, 41.15], [29.50, 41.00], [37.50, 41.00], [37.50, 30.00], [27.00, 30.00], [27.00, 28.00])'
+    # config['bounds']['blacksea'] = '([28.75, 46.89], [42.18, 48.53], [43.89, 40.11], [31.58, 40.35], [24.44, 42.81])' 
     
+
     ####################################################################
     #  BEGIN    Settings  --------------------------------------------- #
     
@@ -253,11 +293,9 @@ def main(**kwargs):
     config['Settings']['Mag_BS_Max']                   = '8.1'                   #MAXIMUM MODELLED MAGNITUDE FOR BS
     config['Settings']['Mag_PS_Max']                   = '9.1'
     config['Settings']['selected_intensity_measure']   = 'gl'                    #TO SELECT AMONG AF, GL AND OS
-    config['Settings']['run_up_yn']                    = 'False'                  #if false, the intensity measure is used as it is; if true, a further amplification is applied (3 for af; 2 for gl)
     config['Settings']['nr_points_2d_ellipse']         = '1000'
-    config['Settings']['hazard_curve_sigma']           = '1'
     config['Settings']['ptf_measure_type']             = 'ts_p2t_gl'            # Allowd values: 'ts_max', 'ts_max_gl', 'ts_max_off', 'ts_max_off_gl', 'ts_min', 'ts_min_off', 'ts_p2t', 'ts_p2t_gl'
-    config['Settings']['hazard_mode']                  = 'lognormal_v1'       # Allowed values: 'no_uncertainty', 'lognormal', 'lognormal_v1'
+    # config['Settings']['logn_sigma']                   = '1'
     # config['Settings']['writeOutTesting']              = 'False'                 #???
     # config['Settings']['verboseYN']                    = 'False'                 #???
     # config['Settings']['figcheckYN']                   = 'False'                 #???
@@ -305,7 +343,8 @@ def main(**kwargs):
     
     # Alert levels settings
     config['alert_levels']                  = {}
-    config['alert_levels']['intensity']     = '{\'run_up_yes\':\'[0,0.40,1.0]\', \'run_up_no\':\'[0,0.2,0.5]\'}'
+    config['alert_levels']['run_up_yn']     = 'False'                  #if false, the intensity measure is used as it is; if true, a further amplification is applied (3 for af; 2 for gl)
+    config['alert_levels']['thresholds']     = '{\'run_up_yes\':\'[0,0.40,1.0]\', \'run_up_no\':\'[0,0.2,0.5]\'}'
     config['alert_levels']['names']         = '[\'Information\',\'Advisory\',\'Watch\']'
     config['alert_levels']['fcp_method']    = '{\'method\': \'probability\', \'rule\': \'max\', \'probability_level\': 0.05}'
     # config['alert_levels']['type']          = '{\'matrix\':\'1\',  \'average\':\'1\', \'best\':\'1\', \'P\':\'[50,500,50]\' }'

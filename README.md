@@ -53,7 +53,7 @@ In this .json file you can find the main setting to run the tool (see below).
 
 If you are running Step 2b you need also to copy this template file:
 ```
-cp template/load_env.source.template path_to_your_working_dir/load_env.source
+cp templates/load_env.source.template path_to_your_working_dir/load_env.source
 ```
 In this .source file you have to modify the command line according to the environment method and name.
 
@@ -108,12 +108,12 @@ Mandatory arguments for remote connection only:
 
 3. Run TDT by the command:
 ```
-python workflow_main.py --cfg ./cfg/ptf_main.config --input_workflow path_to_your_working_dir/workflow_input.json --event path_to_event_json_files/eventname.json
+python workflow_main.py --cfg ./cfg/ptf_main.config --input_workflow path_to_your_working_dir/workflow_input.json --event_file path_to_event_json_files/eventname.json
 ```
 Mandatory arguments:
 - `--cfg`: name of configuration file (file name w/ path)
 - `--input_workflow`:  name of the input json file (file name w/ path)
-- `--event`: name of the event json file (file name w/ path)
+- `--event_file`: name of the event json file (file name w/ path)
 
 Useful optional parameters can also be set from command line to overwrite the values defined in the `workflow_input.json` or in the configuration file:
 

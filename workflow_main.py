@@ -18,14 +18,14 @@
 # Import system modules
 import os
 import sys
-import configparser
+import ast
 
-sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), 'py'))
-import run_steps
-from ptf_parser import parse_ptf_stdin
-from ptf_mix_utilities import create_workflow_dict, update_workflow_dict
-from ptf_load_event import load_event_dict
-import ptf_rabbit_consume as rabbit_consume
+from pyptf.pyptf import PyPTF
+from pyptf.pyptf_exceptions import PyPTFException
+
+from pyptf.ptf_parser import parse_ptf_stdin
+import pyptf.ptf_rabbit_consume as rabbit_consume
+
 
 # -----------------------------------------------------------------------------
 # SETTINGS
@@ -35,42 +35,30 @@ args = parse_ptf_stdin()
 mode = args.mode                   # event/rabbit
 event_format = args.event_format   # event parameter file format 
 
-# reading configuration file
-cfg_file = args.cfg
-Config = configparser.RawConfigParser()
-Config.read(cfg_file)
-
-# creating workflow dictionary
-workflow_dict = create_workflow_dict(args   = args,
-                                     Config = Config)
-
-workflow_dict = update_workflow_dict(args          = args,
-                                     workflow_dict = workflow_dict)
-
-# 
-print('============================')
-print('========== EVENT ===========')
-print('============================')
+# instance of PyPTF class 
+pyPTF = PyPTF(cfg=args.cfg,
+              input_workflow=args.input_workflow, 
+              hazard_mode=args.hazard_mode,
+              ptf_version=args.ptf_version,
+              mag_sigma_val=args.mag_sigma_val,
+              sigma=args.sigma,
+              logn_sigma=args.logn_sigma,
+              in_memory=ast.literal_eval(args.in_memory),
+              type_df=args.type_df,
+              percentiles=args.percentiles)
+print(pyPTF)
 
 if (mode == 'event'):
-    #  
-    if not os.path.exists(workflow_dict['event_file']):
-        sys.exit('Event file ' + workflow_dict['event_file'] + ' not found. Exit')
-
-    event_dict = load_event_dict(cfg_file      = cfg_file,
-                                 args          = args,
-                                 workflow_dict = workflow_dict)
-
-    run_steps.main(cfg_file      = cfg_file,
-                   args          = args,
-                   workflow_dict = workflow_dict,
-                   event_dict    = event_dict)
-    
+    try:
+        ptf_results = pyPTF.run_from_file(args.event_file)
+    except PyPTFException as e:
+        print(str(e))
 
 elif (mode == 'rabbit'):
-    rabbit_consume.main(cfg_file      = cfg_file,
-                        args          = args,
-                        workflow_dict = workflow_dict)   
+    try:
+        ptf_results = rabbit_consume.main(pyPTF = pyPTF)
+    except PyPTFException as e:
+        print(str(e))
 
 else:
     sys.exit('Accepted values for the argument mode are event [default] or rabbit.')

@@ -19,3 +19,4 @@ fabric
 cartopy
 pika
 pandas
+polars

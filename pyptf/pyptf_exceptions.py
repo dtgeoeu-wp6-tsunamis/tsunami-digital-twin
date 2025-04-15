@@ -1,0 +1,2 @@
+class PyPTFException(Exception):
+    pass
