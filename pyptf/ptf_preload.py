@@ -148,9 +148,9 @@ def load_pois(**kwargs):
     POIs = foe.item()
     empty_space = "%10s" % ('')
     logger.info('{} {} POIs found'.format(empty_space, len(POIs['name'])))
-    logger.info('{} --> {} in the Mediterranean Sea'.format(empty_space, countX(POIs['Mediterranean'], 1)))
-    logger.info('{} --> {} in the Black Sea'.format(empty_space, countX(POIs['BlackSea'], 1)))
-    logger.info('{} --> {} in the Atlantic Ocean'.format(empty_space, countX(POIs['Atlantic'], 1)))
+    #logger.info('{} --> {} in the Mediterranean Sea'.format(empty_space, countX(POIs['Mediterranean'], 1)))
+    #logger.info('{} --> {} in the Black Sea'.format(empty_space, countX(POIs['BlackSea'], 1)))
+    #logger.info('{} --> {} in the Atlantic Ocean'.format(empty_space, countX(POIs['Atlantic'], 1)))
 
     return POIs
 

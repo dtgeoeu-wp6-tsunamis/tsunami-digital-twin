@@ -27,6 +27,7 @@ def parse_ptf_stdin():
     parser.add_argument('--event_file',        default = None,        help = 'seismic event parameter file with path. Default = None')
     parser.add_argument('--event_format',      default = 'json',      help = 'file format for event parameter file ([json]/xml/csv).')
     parser.add_argument('--ptf_version',       default = 'neam',  help = 'Selection of ptf_version. neam: uses long term info (neam area only); global: uses moment tensor (everywhere). Default=neam')
+    parser.add_argument('--user_gridname',     default = None,  help = 'Filename (w/path) of the user-provided grid file. Mandatory if user_grid=True. Default=None')
     parser.add_argument('--rabbit_mode',       default = 'save',      help = 'rabbit-mq start sonsuming mode. save: hold and process the existing queue. clean: empty queue befor consuming. Default=save')
     parser.add_argument('--in_memory',         default = False,       help = 'flag (True/False) to pre-load in memory all data used in ptf steps. Default = True' )
     parser.add_argument('--type_df',           default = 'polars',    help = 'Select which dataframe (pandas/polars). Default = polars' )
@@ -50,7 +51,7 @@ def parse_ptf_stdin():
     # parser.add_argument('--sigma_out',         default = None,        help = 'real numbers indicating the proportion of standard deviation surrounded by each ellipse ' +\
     #                                                                          'to select all positions of interest using a larger area to avoid bias. Default is set by the configuration file. ' + \
     #                                                                          'This option when used override the configuration value')
-    parser.add_argument('--percentiles',       default = [50, 40, 30, 20, 15, 10, 5, 1, 0],  nargs='+', type=int,  help = 'Percentiles (exceedance probability) used for hazard maps. Example: --percentiles 2 16 50 84 98 ')
+    parser.add_argument('--percentiles',       default = [50, 40, 30, 20, 15, 10, 5, 1, 0.01],  nargs='+', type=int,  help = 'Percentiles (exceedance probability) used for hazard maps. Example: --percentiles 2 16 50 84 98 ')
     parser.add_argument('--hcurves_float',     default = '16',        help = 'Float type for npy . Default: 16')
     parser.add_argument('--hazard_mode',       default = 'lognormal_pl',  help = 'Method for computing hazard curves: no_uncertainty, lognormal, lognormal_v1, lognormal_pl')
     parser.add_argument('--ps_type',           default = '1',         help = 'PS probability type: 1,2. Default 1')

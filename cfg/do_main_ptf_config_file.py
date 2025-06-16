@@ -89,7 +89,9 @@ def main(**kwargs):
     # 5: Files
     regionalization_npy            = mix_npy_files_folder + os.path.sep + 'regionalization.npy'
     # pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs.npy'
-    pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs_new.npy'
+    # pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs_new.npy'
+    # pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs__tmp.npy'
+    pois_npy                       = mix_npy_files_folder + os.path.sep + 'POIs_pacific_dep30sec_tmp.npy'
     discretization_npy             = mix_npy_files_folder + os.path.sep + 'discretizations.npy'
     lookuptable_npy                = mix_npy_files_folder + os.path.sep + 'LookupTable.npy' 
     ps_bar_info                    = mix_npy_files_folder + os.path.sep + 'PSBarInfo.npy'  
@@ -145,6 +147,7 @@ def main(**kwargs):
     config['save_ptf']['step1_prob_PS']             = 'step1_prob_scenarios_PS_'
     config['save_ptf']['step1_list_BS']             = 'step1_list_scenarios_BS_'
     config['save_ptf']['step1_list_PS']             = 'step1_list_scenarios_PS_'
+    config['save_ptf']['most_prob_filename']        = 'step1_most_probable_scenario_'
     config['save_ptf']['step2_hmax_pre_BS']         = 'step2_hmax_pre_BS_'
     config['save_ptf']['step2_hmax_pre_PS']         = 'step2_hmax_pre_PS_'
     config['save_ptf']['step2_hmax_sim_BS']         = 'step2_hmax_sim_BS_'
@@ -220,13 +223,13 @@ def main(**kwargs):
     #set steps for discretization
     config['global']['magnitude_values'] = '[6.0, 6.5, 6.8012, 7.0737, 7.3203, 7.5435, 7.7453, 7.928, 8.0933, 8.2429, 8.3782, 8.5007, 8.6115, 8.7118, 8.8025, 8.8846, 8.9588, 9.026]'
     config['global']['position_step']  = '25000'  # m
-    config['global']['depth_step']     = '3000'   # m
-    config['global']['strike_step']    = '10'     # degree
-    config['global']['strike_sigma']   = '20'     # degree
-    config['global']['dip_step']       = '10'     # degree
-    config['global']['dip_sigma']      = '20'     # degree
-    config['global']['rake_step']      = '10'     # degree
-    config['global']['rake_sigma']     = '20'     # degree
+    config['global']['depth_step']     = '5000'   # m
+    config['global']['strike_step']    = '15'     # degree
+    config['global']['strike_sigma']   = '15'     # degree
+    config['global']['dip_step']       = '12'     # degree
+    config['global']['dip_sigma']      = '12'     # degree
+    config['global']['rake_step']      = '15'     # degree
+    config['global']['rake_sigma']     = '15'     # degree
     config['global']['rigidity']       = '33e9'   # Pa
 
 
@@ -257,6 +260,8 @@ def main(**kwargs):
     config['tsu_sims']['depth_filename']        = 'step2_pois_depth.npy'
     config['tsu_sims']['run_sim_filename']      = 'step2_run_tmp.sh'
     config['tsu_sims']['run_post_filename']     = 'step2_final_postproc.sh'
+    config['tsu_sims']['run_misfit_tmp_mercalli']  = wf_folder + os.path.sep + 'sh/misfit_tmp@mercalli.sh'
+    config['tsu_sims']['run_misfit_tmp_leonardo']  = wf_folder + os.path.sep + 'sh/misfit_tmp@leonardo.sh'
 
     ####################################################################
     # BEGIN EVENT TREE  Definition ------------------------------------- ##

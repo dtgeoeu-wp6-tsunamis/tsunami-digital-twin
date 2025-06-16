@@ -9,9 +9,9 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:1
+##SBATCH --gres=gpu:1
 #SBATCH --exclusive
-#SBATCH --time=12:00:00
+#SBATCH --time=2:00:00
 
 source LOADENV
 cd $SLURM_SUBMIT_DIR

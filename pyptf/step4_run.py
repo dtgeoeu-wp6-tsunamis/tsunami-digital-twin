@@ -21,6 +21,8 @@ def main(**kwargs):
 
     pois_idx = pois_d['pois_index']
     n_pois = len(pois_idx)
+    # n_pois = 536 # fix cile
+    # n_pois = 1952 # fix tohoku
 
     al_run_up_yn = workflow_dict['al_run_up_yn']
     al_thresholds = workflow_dict['al_thresholds']
@@ -55,20 +57,29 @@ def main(**kwargs):
 
     # np.set_printoptions(threshold=sys.maxsize)
     # logger.info(pois_alert_levels['mean'])
-    if  event_dict['area'] == 'cat_area':
+    if  event_dict['area'] == 'cat_area' and event_dict['epicentral_distance_from_coast'] < 100.:
         logger.info(" --> Alert levels at POIs based on Decision Matrix")
         pois_alert_levels = set_alert_levels_matrix(workflow_dict = workflow_dict,
                                                     event_dict = event_dict,
                                                     pois_d = pois_d,
                                                     n_pois = n_pois,
                                                     pois_alert_levels = pois_alert_levels)
+    else:
+        logger.info(" --> DM not computed as the event is out of DM criteria (cat-area / distance)")
 
-    logger.info(" --> POIs to forecast points")
-    fcp_alert_levels, fcp_names, fcp_coordinates, fcp_ids = pois_to_fcp_levels_all(pois_alert_levels = pois_alert_levels, 
-                                                                                   method = workflow_dict['al_fcp_method'],
-                                                                                   fcp = fcp,
-                                                                                   fcp_dict = fcp_dict,
-                                                                                   pois = pois_d)
+    if workflow_dict['ptf_version'] == 'neam':
+        logger.info(" --> POIs to forecast points")
+        fcp_alert_levels, fcp_names, fcp_coordinates, fcp_ids = pois_to_fcp_levels_all(pois_alert_levels = pois_alert_levels, 
+                                                                                       method = workflow_dict['al_fcp_method'],
+                                                                                       fcp = fcp,
+                                                                                       fcp_dict = fcp_dict,
+                                                                                       pois = pois_d)
+    elif workflow_dict['ptf_version'] == 'global':
+        fcp_alert_levels = None
+        fcp_names = None
+        fcp_coordinates = None
+        fcp_ids = None
+
 
     # logger.info(" --> Set official alert level at fcp for pyPTF")
     # levels = set_fcp_alert_ptf(level = levels, cfg = Config)

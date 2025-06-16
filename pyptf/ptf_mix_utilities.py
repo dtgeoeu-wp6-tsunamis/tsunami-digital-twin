@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import numpy.matlib as npm
 from numba import jit
-from pathlib import Path
+# from pathlib import Path
 from scipy.stats import norm
 from shapely import geometry
 import pygmt
@@ -38,6 +38,7 @@ def create_workflow_dict(**kwargs):
 
     wd['hazard_mode'] = args.hazard_mode
     wd['ptf_version'] = args.ptf_version
+    wd['user_gridname'] = args.user_gridname
     wd['mag_sigma_val'] = args.mag_sigma_val
     wd['type_df'] = args.type_df
     wd['percentiles'] = np.array(args.percentiles)*0.01
@@ -62,6 +63,7 @@ def create_workflow_dict(**kwargs):
     wd['step1_list_PS_root'] = Config.get('save_ptf', 'step1_list_PS')
     wd['step1_prob_SBS_root'] = Config.get('global', 'step1_prob_SBS')
     wd['step1_list_SBS_root'] = Config.get('global', 'step1_list_SBS')
+    wd['step1_most_prob_filename_root'] = Config.get('save_ptf', 'most_prob_filename')
 
     wd['step2_hmax_pre_BS_root'] = Config.get('save_ptf', 'step2_hmax_pre_BS')
     wd['step2_hmax_pre_PS_root'] = Config.get('save_ptf', 'step2_hmax_pre_PS')
@@ -120,6 +122,9 @@ def create_workflow_dict(**kwargs):
     wd['rake_sigma'] = float(Config.get('global', 'rake_sigma'))
     wd['rigidity'] = float(Config.get('global', 'rigidity'))
     wd['grid_global'] = Config.get('global', 'grid_global')
+
+    # for computing the misfit between the observed and simulated tsunami
+    wd['compute_misfit'] = jsn_object['SETTINGS']['compute_misfit']
 
     # for sampling
     wd['sampling_mode'] = jsn_object['SETTINGS']['sampling mode']
@@ -187,11 +192,13 @@ def create_workflow_dict(**kwargs):
     if wd['hpc_cluster'] == 'leonardo':
         wd['run_sim_tmp'] = Config.get('tsu_sims','run_sim_tmp_leonardo')
         wd['run_post_tmp'] = Config.get('tsu_sims','run_post_tmp_leonardo')
+        wd['run_misfit_tmp'] = Config.get('tsu_sims','run_misfit_tmp_leonardo')
         # wd['ps_inicond_med_remote'] = Config.get('tsu_sims', 'ps_inicond_med_leonardo')
         wd['job_status_cmd'] = 'squeue'
     elif wd['hpc_cluster'] == 'mercalli':
         wd['run_sim_tmp'] = Config.get('tsu_sims','run_sim_tmp_mercalli')
         wd['run_post_tmp'] = Config.get('tsu_sims','run_post_tmp_mercalli')
+        wd['run_misfit_tmp'] = Config.get('tsu_sims','run_misfit_tmp_mercalli')
         # wd['ps_inicond_med_remote'] = Config.get('tsu_sims', 'ps_inicond_med_mercalli')
         wd['job_status_cmd'] = 'qstat'
     elif wd['hpc_cluster'] != 'leonardo' and wd['hpc_cluster'] != 'mercalli': 
@@ -211,6 +218,7 @@ def create_output_names(**kwargs):
     wd['step1_list_BS'] = wd['step1_list_BS_root'] + wd['uniqueID'] + '.txt'
     wd['step1_list_PS'] = wd['step1_list_PS_root'] + wd['uniqueID'] + '.txt'
     wd['step1_list_SBS'] = wd['step1_list_SBS_root'] + wd['uniqueID'] + '.txt'
+    wd['step1_most_prob_filename'] =  wd['step1_most_prob_filename_root'] + wd['uniqueID'] + '.npy'
     wd['step2_hmax_pre_BS'] = wd['step2_hmax_pre_BS_root'] + wd['uniqueID'] + '.nc'
     wd['step2_hmax_pre_PS'] = wd['step2_hmax_pre_PS_root'] + wd['uniqueID'] + '.nc'
     wd['step2_hmax_sim_BS'] = wd['step2_hmax_sim_BS_root'] + wd['uniqueID'] + '.nc'
@@ -240,7 +248,7 @@ def create_output_names(**kwargs):
     wd['step5_alert_levels'] = wd['step5_alert_levels_root'] + wd['uniqueID']
     wd['step5_hazard_maps'] = wd['step5_hazard_maps_root'] + wd['uniqueID']
     wd['step5_hazard_curves'] = wd['step5_hazard_curves_root'] + wd['uniqueID']
-    wd['workflow_dictionary'] = wd['workflow_dictionary_root'] + wd['uniqueID']
+    wd['workflow_dictionary'] = wd['workflow_dictionary_root'] + wd['uniqueID'] + '.npy'
     wd['event_dictionary'] = wd['event_dictionary_root'] + wd['uniqueID']
     wd['status_file'] = wd['status_file_root'] + wd['uniqueID'] + '.txt'
 
@@ -293,10 +301,23 @@ def select_pois_from_epicenter(**kwargs):
     longitude = kwargs.get('longitude', None)
     latitude = kwargs.get('latitude', None)
     distance = kwargs.get('distance', None)
+    user_gridname = kwargs.get('user_gridname', None)
     logger = kwargs.get('logger', None)
 
-    #define a rectangle around the epicenter
-    minlon, maxlon, minlat, maxlat = rectangle_around_the_epicenter(longitude, latitude, distance)
+    if longitude < 0.:
+        longitude=longitude + 360.
+
+    if user_gridname is not None:
+        info = pygmt.grdinfo(user_gridname, per_column='n')
+        # info is a string: <x_min> <x_max> <y_min> <y_max> ...
+        parts = info.strip().split()
+        minlon = float(parts[0])
+        maxlon = float(parts[1])
+        minlat = float(parts[2])
+        maxlat = float(parts[3])
+    else:
+        #define a rectangle around the epicenter
+        minlon, maxlon, minlat, maxlat = rectangle_around_the_epicenter(longitude, latitude, distance)
 
     # Northwest latlon point
     NW = (maxlat, minlon)
@@ -320,28 +341,37 @@ def select_pois_from_epicenter(**kwargs):
     pois_d['pois_depth'] = pois_d['pois_depth'][list_selected] 
     pois_d['pois_index'] = [pois_d['pois_index'][j] for j in list_selected] 
 
-    # plot_selected_pois(pois_d, event_dict)
+    # plot_selected_pois(pois_d, longitude, latitude)
     logger.info(f"Number of selected POIs: {len(pois_d['pois_index'])}")
 
     return pois_d
 
 
-def plot_selected_pois(pois_d, event_dict):
+def plot_selected_pois(pois_d, longitude, latitude):
     '''
     CONTROLLO SU MAPPA DELLA SELEZIONE DEI POIS
     FORSE DA SPOSTARE IN STEP 5
     '''
 
     import cartopy
+    import matplotlib
     import matplotlib.pyplot as plt
+    # matplotlib.use('TkAgg')
+    # import matplotlib.rcsetup as rcsetup
+    # print(rcsetup.all_backends)
 
     proj = cartopy.crs.PlateCarree()
     #cmap = plt.cm.magma_r
     cmap = plt.cm.jet
-    ev_lon = event_dict['lon']
-    ev_lat = event_dict['lat']
+    ev_lon = longitude
+    ev_lat = latitude
     fig = plt.figure(figsize=(16, 8))
-    ax = plt.axes(projection=cartopy.crs.Mercator())
+    
+    # ax = plt.axes(projection=cartopy.crs.Mercator())
+    # this declares a recentered projection for Pacific areas
+    usemap_proj = cartopy.crs.PlateCarree(central_longitude=180)
+    ax = plt.axes(projection=usemap_proj)
+
     coastline = cartopy.feature.GSHHSFeature(scale='low', levels=[1])
     #coastline = cartopy.feature.GSHHSFeature(scale='high', levels=[1])
     ax.add_feature(coastline, edgecolor='#000000', facecolor='#cccccc', linewidth=1)
@@ -369,7 +399,8 @@ def plot_selected_pois(pois_d, event_dict):
 
     ax.set_xlabel(r'Longitude ($^\circ$)', fontsize=14)
     ax.set_ylabel(r'Latitude ($^\circ$)', fontsize=14)
-    plt.savefig('/work/tonini/test_pyptf/check_selection_pois.png', format='png', dpi=150, bbox_inches='tight')
+    # plt.show() #not working
+    plt.savefig('check_selection_pois.png', format='png', dpi=150, bbox_inches='tight')
 
 
 def check_previous_versions(**kwargs):
@@ -623,7 +654,7 @@ def NormMultiDvec(**kwargs):
     x     = kwargs.get('x', None)
     mu    = kwargs.get('mu', None)
     sigma = kwargs.get('sigma', None)
-    ee    = kwargs.get('ee', None)
+    # ee    = kwargs.get('ee', None)
 
     n = len(mu)
 
@@ -679,7 +710,7 @@ def get_focal_mechanism(**kwargs):
     logger.info('--> Retrieving focal mechanism')
 
     dt = 5 # minutes
-    dmag = 0.3 # magnitude
+    dmag = 0.6 # 0.3 # magnitude
     dlon = 0.5 # degrees
     dlat = 0.5 # degrees
     #ddepth = # km
@@ -689,6 +720,7 @@ def get_focal_mechanism(**kwargs):
     origin_time = datetime.strptime(ot, "%Y-%m-%dT%H:%M:%S")
     starttime = origin_time - timedelta(minutes = dt)
     endtime = origin_time + timedelta(minutes = dt)
+    print(starttime, endtime)
     # longitude
     minlongitude = str(float(ee['lon']) - dlon)
     maxlongitude = str(float(ee['lon']) + dlon)
@@ -739,7 +771,7 @@ def get_focal_mechanism(**kwargs):
             params_update['includefocalmechanism'] = 'true'
         elif node == 'usgs':
             params_update = params.copy()
-            params_update['producttype']= 'focal-mechanism'
+            params_update['producttype']= 'moment-tensor'
         else:
             sys.exit('Wrong focal mechanism provider')
 
@@ -747,7 +779,7 @@ def get_focal_mechanism(**kwargs):
 
         print(node, params, resp.status_code, resp.url, "\n")
 
-        if resp.status_code in range(200,299):
+        if resp.status_code == 200:
             #station_xml_found = True
 
             logger.info(f'    Found Quakeml in: {node}')
@@ -757,7 +789,7 @@ def get_focal_mechanism(**kwargs):
             # Get number of events
             for eventParameters in root.findall("{http://quakeml.org/xmlns/bed/1.2}eventParameters"):
                 num_events = len(eventParameters.findall("{http://quakeml.org/xmlns/bed/1.2}event"))
-            print(num_events)
+
             if num_events > 1:
                 sys.exit("Error: " + str(num_events) + " events found")
              

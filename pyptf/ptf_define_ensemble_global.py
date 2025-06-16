@@ -1,5 +1,6 @@
 import os
 import sys
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 # from datetime                  import datetime
@@ -76,6 +77,9 @@ def define_ensemble_global(**kwargs):
     grid_3d, lon, lat = create_grid3d(event_parameters = event_parameters,
                                       ensemble         = ensemble,
                                       logger           = logger)
+    
+    # fix for negative longitudes (Chile)
+    lon[lon < 0] += 360.
                         
     ensemble['grid_3d'] = grid_3d
     ensemble['position_geo_lon'] = lon
@@ -93,9 +97,15 @@ def define_ensemble_global(**kwargs):
     # ax.scatter(event_parameters['lon'], event_parameters['lat'], event_parameters['depth']*1000., linewidth=0, marker='*', color = 'red')
     # plt.show()
 
-    focal_mechanism = get_focal_mechanism(event_parameters = event_parameters,
-                                          workdir          = workdir,
-                                          logger           = logger)
+    # focal_mechanism = get_focal_mechanism(event_parameters = event_parameters,
+    #                                       workdir          = workdir,
+    #                                       logger           = logger)
+    # focal mechanism for Maule 2010 from USGS (https://earthquake.usgs.gov/earthquakes/eventpage/official20100227063411530_30/moment-tensor)
+    focal_mechanism = {'np1': {'strike': 178.0, 'dip': 77.0, 'rake': 86.0},
+                       'np2': {'strike': 17.0, 'dip': 14.0, 'rake': 108.0}}
+    # focal mechanism for Tohoku 2011 from USGS (https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/moment-tensor)
+    # focal_mechanism = {'np1': {'strike': 193.0, 'dip': 9.0, 'rake': 78.0},
+    #                    'np2': {'strike': 25.0, 'dip': 81.0, 'rake': 92.0}}
 
     ensemble['focal_mechanism'] = discretized_mechanism(focal_mechanism  = focal_mechanism,
                                                         strike_step      = workflow_dict['strike_step'],
@@ -105,6 +115,7 @@ def define_ensemble_global(**kwargs):
                                                         rake_step        = workflow_dict['rake_step'],
                                                         rake_sigma       = workflow_dict['rake_sigma'],
                                                         logger           = logger)
+    print(ensemble['focal_mechanism'])
 
     ensemble['fault_size'] = compute_fault_size(magnitude = ensemble['magnitude'],
                                                 logger    = logger)
@@ -255,7 +266,11 @@ def create_grid3d(**kwargs):
     zz_3d               = zz_3d.flatten('F')
     grid_3d             = np.array([xx_3d, yy_3d, zz_3d]).transpose()
 
-    geo_coord = np.array(utm.to_latlon(grid_3d[:,0], grid_3d[:,1], zone_number, zone_letter))
+    easting = copy.deepcopy(grid_3d[:,0])
+    northing = copy.deepcopy(grid_3d[:,1])
+    geo_coord = np.array(utm.to_latlon(easting, northing, zone_number, zone_letter))
+    # geo_coord = np.array(utm.to_latlon(grid_3d[:,0], grid_3d[:,1], zone_number, zone_letter))
+    # geo_coord = np.array(utm.to_latlon(grid_3d[:,0], grid_3d[:,1], zone_number, northern=True)) # northern=True if coordinates are exepressed with negative latitude in the south hemisphere
     # print(geo_coord.shape, grid_3d.shape)
     logger.info('    Number of grid points = ' + str(grid_3d.shape[0]))
     
@@ -276,30 +291,31 @@ def discretized_mechanism(**kwargs):
 
     #discretizing strike angle
     stk_tmp = fm['np1']['strike']
-    stk1 = np.arange(stk_tmp - stk_sigma, stk_tmp + stk_sigma, stk_step)
+    stk1 = np.arange(stk_tmp - stk_sigma, stk_tmp + stk_sigma + 1., stk_step)  #+1 is to include the last value
     ind1 = np.argwhere(stk1 < 0)
     stk1[ind1] = 180. - stk1[ind1]
     stk_tmp = fm['np2']['strike']
-    stk2 = np.arange(stk_tmp - stk_sigma, stk_tmp + stk_sigma, stk_step)
+    stk2 = np.arange(stk_tmp - stk_sigma, stk_tmp + stk_sigma + 1., stk_step)
     ind2 = np.argwhere(stk2 < 0)
     stk2[ind2] = 180. - stk2[ind2]
 
     #discretizing dip angle
     #TODO BE CAREFUL TO NEGATIVE VALUES OF DIP
     dip_tmp = fm['np1']['dip']
-    dip1 = np.arange(dip_tmp - dip_sigma, dip_tmp + dip_sigma, dip_step)
+    dip1 = np.arange(dip_tmp - dip_sigma, dip_tmp + dip_sigma + 1., dip_step)
     dip_tmp = fm['np2']['dip']
-    dip2 = np.arange(dip_tmp - dip_sigma, dip_tmp + dip_sigma, dip_step)
+    dip2 = np.arange(dip_tmp - dip_sigma, dip_tmp + dip_sigma + 1., dip_step)
 
     #discretizing rake angle
     rake_tmp = fm['np1']['rake']
-    rake1 = np.arange(rake_tmp - rake_sigma, rake_tmp + rake_sigma, rake_step)
+    rake1 = np.arange(rake_tmp - rake_sigma, rake_tmp + rake_sigma + 1., rake_step)
     rake_tmp = fm['np2']['rake']
-    rake2 = np.arange(rake_tmp - rake_sigma, rake_tmp + rake_sigma, rake_step)
+    rake2 = np.arange(rake_tmp - rake_sigma, rake_tmp + rake_sigma + 1., rake_step)
 
     fm1 = np.array(np.meshgrid(stk1, dip1, rake1)).T.reshape(-1,3)
     fm2 = np.array(np.meshgrid(stk2, dip2, rake2)).T.reshape(-1,3)
     focal_mechanism = np.concatenate((fm1, fm2))
+    # print(focal_mechanism)
     logger.info('    Number of angle combinations = ' + str(focal_mechanism.shape[0]))
 
     return focal_mechanism
@@ -395,7 +411,7 @@ def compute_pos_probability(**kwargs):
     grid_3d    = ensemble['grid_3d']
 
     mu = event_parameters['PosMean_3d']
-    co = event_parameters['PosCovMat_3dm']
+    # co = event_parameters['PosCovMat_3dm']
 
     n_points = grid_3d.shape[0]
     n_mag = len(magnitudes)
@@ -405,6 +421,7 @@ def compute_pos_probability(**kwargs):
         v_hwidth = correct_BS_vertical_position(mag = mag)
         h_hwidth = correct_BS_horizontal_position(mag = mag)
 
+        co = copy.deepcopy(event_parameters['PosCovMat_3dm'])
         # Correct  Covariance matrix
         co[0,0] = co[0,0] + h_hwidth**2
         co[1,1] = co[1,1] + h_hwidth**2

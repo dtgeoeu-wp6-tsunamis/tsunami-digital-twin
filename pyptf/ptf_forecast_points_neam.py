@@ -19,7 +19,7 @@ def pois_to_fcp_levels_all(**kwargs):
     # n_pois = len(level[list(level.keys())[0]])
     # pois_idx = pois['pois_index']
     #pois_labels = [pois['pois_labels'][i] for i in pois_idx]
-    pois_labels = pois['pois_labels']
+    pois_labels = list(pois['pois_labels'])
 
     fcp_type_tmp  = np.zeros((n_fcp, n_type))
     fcp_type  = dict()

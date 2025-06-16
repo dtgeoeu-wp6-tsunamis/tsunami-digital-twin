@@ -42,6 +42,7 @@ def create_event_dict(**kwargs):
         logger.info(' --> Event within the CAT area')
     else:
         if workflow_dict['ptf_version'] == 'neam':
+            # TODO define a different rectangle where neam version should work (not only strictly cat-area) 
             #raise Exception('If the event is out of the CAT area ptf_version must be set to global.')
             logger.info('If the event is out of the CAT area ptf_version must be set to global.')
 

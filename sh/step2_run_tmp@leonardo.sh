@@ -5,16 +5,20 @@
 #SBATCH --account=leonardoACC
 #SBATCH --partition=leonardoPART
 #SBATCH --qos=leonardoQOS
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
+#SBATCH --nodes=8
+#SBATCH --ntasks=32
 #SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:4
 #SBATCH --exclusive
-#SBATCH --time=00:30:00
+#SBATCH --time=12:00:00
  
 source LOADENV
 cd $SLURM_SUBMIT_DIR 
+
+export UCX_RC_TIMEOUT=900s
+export UCX_UD_TIMEOUT=900s
+export UCX_DC_TIMEOUT=900s
 
 EVENTSFILE=SCENARIOS_FILE
 

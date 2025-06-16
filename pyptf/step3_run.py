@@ -8,6 +8,7 @@ import polars as pl
 # import xarray as xr
 
 # from pyptf.ptf_preload import load_intensity_thresholds
+import pyptf.misfit_evaluator as misfit
 
 def mylognorm_cdf(mean,sigma, threshold):
     ### CDF in terms of error function, see https://en.wikipedia.org/wiki/Log-normal_distribution
@@ -187,6 +188,13 @@ def main(**kwargs):
     # loading pois
     pois = pois_d['pois_index']
     n_pois = len(pois)
+    # n_pois = 536 #fix cile
+    # n_pois = 1952 #fix tohoku
+
+    # loading misfit values
+    if workflow_dict['compute_misfit']:
+        # perfect match corresponds to a value of 1
+        misfit_values = np.loadtxt(os.path.join(workdir, 'total_misfit.txt')) #size=total number of scenarios BS+PS or SBS (TODO: fix for BS+PS)
 
     # BS
     if prob_bs is None:
@@ -235,12 +243,14 @@ def main(**kwargs):
                                                         hazard_mode    = hazard_mode,
                                                         compute_pdf    = compute_pdf,
                                                         logger         = logger)
+        # mih_bs_max = np.amax(mih_bs, axis=0)
     else:
         logger.info('No BS scenarios for this event.')
         hc_pois_bs = np.zeros((n_pois, len(thresholds)))
         # hc_pois_bs_mean = np.zeros((n_pois))
         pdf_pois_bs = np.zeros((n_pois, len(thresholds)))
         sum_prob_bs = 0.
+        # mih_bs_max = np.zeros((n_pois))
 
     # PS
     if prob_ps is None:
@@ -289,12 +299,14 @@ def main(**kwargs):
                                                         hazard_mode    = hazard_mode,
                                                         compute_pdf    = compute_pdf,
                                                         logger         = logger)
+        # mih_ps_max = np.amax(mih_ps, axis=0)
     else:
         logger.info('No PS scenarios for this event.')
         hc_pois_ps = np.zeros((n_pois, len(thresholds)))
         # hc_pois_ps_mean = np.zeros((n_pois))
         pdf_pois_ps = np.zeros((n_pois, len(thresholds)))
         sum_prob_ps = 0.
+        # mih_ps_max = np.zeros((n_pois))
 
     # SBS
     if prob_sbs is None:
@@ -307,6 +319,12 @@ def main(**kwargs):
     n_sbs = prob_sbs.size
     
     if n_sbs > 0:
+
+        if workflow_dict['compute_misfit']:
+            # if the misfit is computed, the probabilities are updated
+            logger.info('Updating probabilities with misfit values')
+            prob_sbs = misfit.update_probabilities(prob_sbs, misfit_values)
+
         sum_prob_sbs = np.sum(prob_sbs)
       
         if tsu_sim == "to_run":
@@ -331,12 +349,14 @@ def main(**kwargs):
                                                           hazard_mode    = hazard_mode,
                                                           compute_pdf    = compute_pdf,
                                                           logger         = logger)
+        # mih_sbs_max = np.amax(mih_sbs, axis=0)
     else:
         logger.info('No SBS scenarios for this event.')
         hc_pois_sbs = np.zeros((n_pois, len(thresholds)))
         # hc_pois_sbs_mean = np.zeros((n_pois))
         pdf_pois_sbs = np.zeros((n_pois, len(thresholds)))
         sum_prob_sbs = 0.
+        # mih_sbs_max = np.zeros((n_pois))
 
     hc_pois = hc_pois_bs + hc_pois_ps + hc_pois_sbs
     # hazard_curves_pois_mean = hc_pois_bs_mean + hc_pois_ps_mean + hc_pois_sbs_mean
@@ -354,13 +374,27 @@ def main(**kwargs):
 
     # percentiles' labels are expressed as 1-p since they represent the survival function (not exceedance)
     for ip, percentile in enumerate(percentiles):
-        if percentile != 0:
+        if percentile == 0:
+            logger.info('Percentile 100 is not allowed.')
+        elif percentile != 0.0001:
             hc_d['p' +  '{:.0f}'.format((1-percentile)*100).zfill(2)] = mih_percentiles[:,ip]
         else:
             hc_d['envelope'] = mih_percentiles[:,ip]
 
+    # # envelope
+    # hc_d['envelope'] = np.amax(np.vstack((mih_bs_max, mih_ps_max, mih_sbs_max)), axis=0)
+
     #most probable scenario
     all_mih = [mih_bs, mih_ps, mih_sbs] 
+    if workflow_dict.get('most_probable_scenario') is None:
+        file_most_prob = os.path.join(workdir, workflow_dict['step1_most_prob_filename'])
+        #print(file_wd)
+        #tmp = np.load(file_wd, allow_pickle=True).item()#['most_probable_scenario']
+        #print(tmp.keys())
+        try:
+            workflow_dict['most_probable_scenario'] = np.load(file_most_prob, allow_pickle=True).item()
+        except:
+            raise Exception(f"Error reading file: {workflow_dict['step1_most_prob_filename']}")
     idx_seis_type = workflow_dict['most_probable_scenario']['idx_seis_type']
     idx_max_prob_scen = workflow_dict['most_probable_scenario']['idscen'] - 1 #python array starts from zero
     hc_d['most_probable_scenario'] = all_mih[idx_seis_type][idx_max_prob_scen, :]

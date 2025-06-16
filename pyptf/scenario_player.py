@@ -28,9 +28,9 @@ class ScenarioPlayer:
         data_path = kwargs.get('data_path', None)
 
         self.sl_path = os.path.join(data_path, 'service_sl.json')
-        self.gnss_path = os.path.join(data_path, 'Samos_GNSS_data.npy')
+        self.gnss_path = os.path.join(data_path, 'GNSS_data.npy')  # Path to the GNSS data -To be fixed
 
-        self.search_radius_sld = 250. #km
+        self.search_radius_sld = 2500. #km
 
     def run_scenario_player(self, event_dict):
 
@@ -38,7 +38,9 @@ class ScenarioPlayer:
         close_services = self.get_closest_services(event_dict['lat'], event_dict['lon'], self.search_radius_sld)
 
         origin_time = event_dict['ot']
+        # Convert origin_time to datetime object
         datetime_object = datetime.strptime(origin_time, '%Y-%m-%dT%H:%M:%S')
+        # Calculate the time range
         dt1 = datetime_object - timedelta(hours=12)
         dt2 = datetime_object + timedelta(hours=12)
         time_range = (dt1.strftime('%Y-%m-%dT%H:%M:%S'), dt2.strftime('%Y-%m-%dT%H:%M:%S'))
@@ -55,14 +57,21 @@ class ScenarioPlayer:
             # append station information to the appropriate list depending on the data availability
             if data_avl:
                 sealevel_df = sealevel_df.loc[sealevel_df['sec'] >= 0]
-                print(f"Station: {name} | Max {sealevel_df['sea_level'].max()} m")
-                tide = sd.smooth(sec = sealevel_df['sec'].to_numpy(), sealevel = sealevel_df['sea_level'].to_numpy())
-                sealevel_df['sea_level'] = sealevel_df['sea_level'] - tide
+                max_stat = sealevel_df['sea_level'].max()
+                # if not np.isnan(max_stat): 
+                try:
+                    print(f"Station: {name} | Max {max_stat} m")
+                    tide = sd.smooth(sec = sealevel_df['sec'].to_numpy(), sealevel = sealevel_df['sea_level'].to_numpy())
+                    sealevel_df['sea_level'] = sealevel_df['sea_level'] - tide
                 
-                sealevel_dict[name] = dict()
-                sealevel_dict[name]['coords'] = (float(station['geo:lat']), float(station['geo:lon']))
-                sealevel_dict[name]['data'] = sealevel_df
-                stations_with_data.append({"ssc_id": ssc_id, "name": name})
+                    sealevel_dict[name] = dict()
+                    sealevel_dict[name]['coords'] = (float(station['geo:lat']), float(station['geo:lon']))
+                    sealevel_dict[name]['data'] = sealevel_df
+                    stations_with_data.append({"ssc_id": ssc_id, "name": name})
+                # else:
+                except:
+                    # TODO Valparaiso station: problem with the radar sensor (prs would work)
+                    stations_without_data.append({"ssc_id": ssc_id, "name": name, "lon": float(station['geo:lon']), "lat": float(station['geo:lat'])})
             else:
                 stations_without_data.append({"ssc_id": ssc_id, "name": name, "lon": float(station['geo:lon']), "lat": float(station['geo:lat'])})
 
@@ -72,8 +81,8 @@ class ScenarioPlayer:
         for station in stations_with_data:
             print(f"  ssc_id: {station['ssc_id']}, name: {station['name']}")
         print(f"Stations without data available: {len(stations_without_data)}")
-        for station in stations_without_data:
-            print(f"  ssc_id: {station['ssc_id']}, name: {station['name']}")
+        # for station in stations_without_data:
+        #     print(f"  ssc_id: {station['ssc_id']}, name: {station['name']}")
 
         # GNSS Data
         data_gnss = self.fetch_gnss_data() # get the GNSS data as dictionary
@@ -157,6 +166,7 @@ class ScenarioPlayer:
             "query": "data",
             "format": "json",
             "code": station_code,
+            # "includesensors[]": "prs",
             "timestart": time_range[0],
             "timestop": time_range[1]
         }
@@ -215,7 +225,7 @@ class ScenarioPlayer:
             gnss = np.load(self.gnss_path, allow_pickle=True).item()
             return gnss
         except FileNotFoundError:
-            print(f"Error: GNSS data file not found at {self.gnss_path}")
+            print(f"WARNING: GNSS data file not found at {self.gnss_path}")
             return None
         except Exception as e:
             print(f"Error reading GNSS data: {e}")

@@ -29,6 +29,7 @@ def set_alert_levels_matrix(**kwargs):
     event_parameters = define_level_alerts_decision_matrix(event_parameters = event_dict, 
                                                            min_mag          = wd['min_mag'])
 
+    # if not isinstance(eve_dic['alert_local'], str): 
     pois_alert_levels['matrix'] = set_points_alert_level(distances         = distances, 
                                                          event_parameters  = event_parameters, 
                                                          local_distance    = wd['local_distance'],

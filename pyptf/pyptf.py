@@ -26,7 +26,8 @@ class Namespace:
 class PyPTF:
 
 
-    def __init__(self, cfg, input_workflow, hazard_mode, ptf_version, mag_sigma_val, sigma, logn_sigma, in_memory, type_df, percentiles, save=True, logger=None):
+    def __init__(self, cfg, input_workflow, hazard_mode, ptf_version, user_gridname, 
+                 mag_sigma_val, sigma, logn_sigma, in_memory, type_df, percentiles, save=True, logger=None):
 
         starttime = time.time()
 
@@ -44,6 +45,7 @@ class PyPTF:
             input_workflow = input_workflow,
             hazard_mode = hazard_mode,
             ptf_version = ptf_version,
+            user_gridname = user_gridname,
             mag_sigma_val = mag_sigma_val,
             type_df = type_df,
             ps_type = 1,
@@ -92,7 +94,7 @@ class PyPTF:
         
             pois_d['pois_coords'] = POIs['selected_coords']
             pois_d['pois_depth'] = POIs['selected_depth']
-            pois_d['pois_labels'] = POIs['selected_pois']
+            pois_d['pois_labels'] = np.array(POIs['selected_pois'])
 
             if self.workflow_dict['TEWmode']:
                 pois_idx_for_fcp = ptf_preload.select_pois_for_fcp(fcp  = self.fcp, 
@@ -369,17 +371,23 @@ class PyPTF:
 
             # global version
             if workflow_dict['ptf_version'] == 'global':
-                # create simulation grid
-                ptf_mix_utilities.create_simulation_grid(longitude = event_parameters['lon'], 
-                                                         latitude = event_parameters['lat'], 
-                                                         distance = workflow_dict['dist_from_epi'],
-                                                         gridfile_input = workflow_dict['grid_global'],
-                                                         gridfile_output =  os.path.join(workflow_dict['workdir'], workflow_dict['bathy_filename']))
+                if workflow_dict['user_gridname'] is not None:
+                    # copy user-provided topo-bathymetric grid
+                    self.logger.info('Going to use user-provided topo-bathymetric grid')
+                    cp = shutil.copy(workflow_dict['user_gridname'], os.path.join(workflow_dict['workdir'], workflow_dict['bathy_filename']))
+                else:
+                    # create simulation grid
+                    ptf_mix_utilities.create_simulation_grid(longitude = event_parameters['lon'], 
+                                                             latitude = event_parameters['lat'], 
+                                                             distance = workflow_dict['dist_from_epi'],
+                                                             gridfile_input = workflow_dict['grid_global'],
+                                                             gridfile_output =  os.path.join(workflow_dict['workdir'], workflow_dict['bathy_filename']))
                 # geographical selection of POIs based on the event location
                 self.pois_d = ptf_mix_utilities.select_pois_from_epicenter(pois_d = self.pois_d,
                                                                            longitude = event_parameters['lon'], 
                                                                            latitude = event_parameters['lat'], 
                                                                            distance = workflow_dict['dist_from_epi'],
+                                                                           user_gridname = workflow_dict['user_gridname'],
                                                                            logger = self.logger)
 
             run_steps.main(cfg           = self.config,

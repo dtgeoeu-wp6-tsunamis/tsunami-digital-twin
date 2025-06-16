@@ -29,6 +29,8 @@
                      "sampling type": "LH",
                      "_comment": "Sampling ensemble - target number of scenarios for sampling",
                      "number of scenarios": 500,
+                     "_comment": "Optional for computing the misfit between the observed and simulated waveforms",
+                     "compute_misfit": False,
                      "_comment": "Optional for computing the PDF",
                      "compute_pdf": False,
                      "_comment": "Optional for writing output from step3 in netcdf format",

@@ -107,7 +107,8 @@ def create_setup(**kwargs):
 
     if hpc_cluster == 'leonardo':  # leonardo @CINECA#
 
-        ngpus = 4  # 4 GPUs/node on leonardo @CINECA
+        # ngpus = 4  # 4 GPUs/node on leonardo @CINECA
+        ngpus = 32  # 4 GPUs/node on leonardo @CINECA => 8 nodes
 
         if UCmode:   # !to check
             cp = shutil.copy('sh/Step2_launch_simulARRAY_leonardo.sh', os.path.join(workdir, 'Step2_launch_simul.sh'))
@@ -298,7 +299,7 @@ def submit_jobs(**kwargs):
         os.mkdir(log_folder)
 
     #submit jobs 
-    #for j in range(njobs):
+    # for j in range(njobs):
     for j in range(1):     ###for testing###
         kk = j + 1
         print('chunk ' + str(kk) + '/' + str(njobs))

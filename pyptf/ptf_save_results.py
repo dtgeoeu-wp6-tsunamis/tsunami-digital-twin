@@ -3,14 +3,13 @@ import numpy as np
 import scipy
 import xarray as xr
 import shutil
+import polars as pl
+import glob
 
-class ptfResult:
-    def __init__(self, event_dict, workflow_dict, pois_d, thresholds, logger):
-        self.event_dict = event_dict
+class ptfResultGlobal:
+    def __init__(self, workflow_dict):
         self.workflow_dict = workflow_dict
-        self.logger = logger
-        self.pois_d = pois_d
-        self.thresholds = thresholds
+
         self.results = {
             'step1': {},
             'step2': {},
@@ -18,8 +17,82 @@ class ptfResult:
             'step4': {},
             'step5': {},
         }
-        self.status = None
 
+        self.alert_level_float2str = {
+            '0.0': '',
+            '1.0': 'information',
+            '2.0': 'advisory',
+            '3.0': 'watch',
+            '0': '',
+            '1': 'information',
+            '2': 'advisory',
+            '3': 'watch'
+        }
+
+    def set_result(self, step_name, result_key, result_value):     
+        self.results[step_name][result_key] = result_value
+
+    '''
+        return alert level  for all pois for a given percentile (or 'matrix') in json format
+        pois are returned also with name, lon, lat
+    '''
+    def get_pois_alert_levels(self, type='mean'): 
+        al_string = [{'alert_level': self.alert_level_float2str[str(al_float)]} for al_float in self.results['step4']['pois_alert_levels'][type]]
+            
+        alert_levels_dataframe = pl.DataFrame(
+            al_string,
+            schema={"alert_level": pl.String}
+        )
+
+        pois_coordinates = pl.DataFrame(
+            self.pois_d['pois_coords'],
+            schema={"lon": pl.Float32, "lat": pl.Float32}
+        )
+
+        pois_labels = pl.DataFrame(
+            self.pois_d['pois_labels'],
+            schema={"name": pl.String}
+        )
+
+        final_dataframe = pl.concat([alert_levels_dataframe, pois_labels, pois_coordinates], how="horizontal") 
+
+        return final_dataframe.write_json()
+
+    '''
+        return wave_weight for all pois for a given percentile in json format
+        pois are returned also with name, lon, lat 
+    '''
+    def get_hc(self, type='mean'):            
+        hc_dataframe = pl.DataFrame(
+            self.results['step3']['hc_d'][type],
+            schema={"wave_weight": pl.Float32}
+        )
+
+        pois_coordinates = pl.DataFrame(
+            self.pois_d['pois_coords'],
+            schema={"lon": pl.Float32, "lat": pl.Float32}
+        )
+
+        pois_labels = pl.DataFrame(
+            self.pois_d['pois_labels'],
+            schema={"name": pl.String}
+        )
+
+        final_dataframe = pl.concat([hc_dataframe, pois_labels, pois_coordinates], how="horizontal") 
+
+        return final_dataframe.write_json()
+
+class ptfResult(ptfResultGlobal):
+    #def __init__(self, event_dict, workflow_dict, pois_d, thresholds, logger):
+    def __init__(self, event_dict, pois_d, thresholds, logger, **kwargs):
+        super().__init__(**kwargs) 
+
+        self.event_dict = event_dict
+        # self.workflow_dict = workflow_dict
+        self.logger = logger
+        self.pois_d = pois_d
+        self.thresholds = thresholds
+        self.status = None
 
     def update_workflow_dict(self, new_workflow_dict):
         self.workflow_dict = new_workflow_dict
@@ -27,8 +100,6 @@ class ptfResult:
     # def set_results(self, step_name, results):
     #     self.results[step_name] = results
 
-    def set_result(self, step_name, result_key, result_value):     
-        self.results[step_name][result_key] = result_value
 
     # def get_results(self, step_name):
     #     results_step = self.results[step_name]
@@ -39,11 +110,7 @@ class ptfResult:
 
     # def get_status(self):
     #     return self.status
-
-    def get_alert_levels(self, type='mean'):            
-        #return {fcp_name: {'coordinates': fcp_coordinate,'alert_level': fcp_lev} for fcp_lev, fcp_name, fcp_coordinate in zip(self.results['step4']['fcp_alert_levels'][type], self.results['step4']['fcp_names'], self.results['step4']['fcp_coordinates'])}
-        return [ {'lat': fcp_coordinate[1], 'lon': fcp_coordinate[0], 'alert_level': fcp_lev, 'fcp_name': fcp_name} for fcp_lev, fcp_name, fcp_coordinate in zip(self.results['step4']['fcp_alert_levels'][type], self.results['step4']['fcp_names'], self.results['step4']['fcp_coordinates'])]
-
+    
     def set_status(self, status):
         self.status = status
 
@@ -53,18 +120,13 @@ class ptfResult:
         if not self.results['step4']:
             return []
         #TODO: creare 'alert_level_float2str' a partire dal file di configuratione e all'interno dell'init della pypytf e inserendolo nel workflow_dict
-        alert_level_float2str = {
-            '0.0': '',
-            '1.0': 'information',
-            '2.0': 'advisory',
-            '3.0': 'watch'
-        }
+
         return [ 
             {
             'id': fcp_id, 
             'lat': fcp_coordinate[1], 
             'lon': fcp_coordinate[0], 
-            'alert_level': alert_level_float2str[str(fcp_lev)], 
+            'alert_level': self.alert_level_float2str[str(fcp_lev)], 
             'name': fcp_name
             } for fcp_id, fcp_lev, fcp_name, fcp_coordinate in zip(
                 self.results['step4']['fcp_ids'], 
@@ -73,6 +135,7 @@ class ptfResult:
                 self.results['step4']['fcp_coordinates']
             )
         ]
+
 
     # def saveAsJson():
     #     pass
@@ -162,7 +225,10 @@ class ptfResult:
             prob_scenarios_sbs = self.results['step1']['prob_scen_sbs']
             file_sbs_prob = os.path.join(self.workflow_dict['workdir'], self.workflow_dict['step1_prob_SBS'])
             np.save(file_sbs_prob, prob_scenarios_sbs)
-            #
+
+            # save most probable scenario
+            most_prob_file = os.path.join(self.workflow_dict['workdir'], self.workflow_dict['step1_most_prob_filename'])
+            np.save(most_prob_file, self.workflow_dict['most_probable_scenario'])
     
             # save_probability_scenarios(prob_scenarios_bs = self.results['step1']['prob_scenarios_bs'], 
             #                            prob_scenarios_ps = self.results['step1']['prob_scenarios_ps'],
@@ -242,7 +308,7 @@ class ptfResult:
             self.logger.info('....saving alert levels over fcp')
             fcp_alert_levels = self.results['step4']['fcp_alert_levels']
             np.save(os.path.join(self.workflow_dict['workdir'], self.workflow_dict['step4_alert_levels_FCP']), fcp_alert_levels, allow_pickle=True)
-        
+       
         # copy json file in the output folder
         if self.event_dict.get('event_file'):
             cp = shutil.copy(self.event_dict['event_file'], self.workflow_dict['workdir'])
@@ -254,3 +320,27 @@ class ptfResult:
         with open(os.path.join(self.workflow_dict['workdir'], self.workflow_dict['status_file']), 'w') as f:
             f.write(self.status)
 
+class PtfResultPostProcess(ptfResultGlobal):
+    def __init__(self, resultDataDirectory, **kwargs):
+        super().__init__(**kwargs) 
+
+        self.files = os.listdir(resultDataDirectory)
+        
+        self.pois_d = np.load(os.path.join(resultDataDirectory, 'pois.npy'), allow_pickle=True).item()
+
+        alert_levels_POI_file = glob.glob(os.path.join(resultDataDirectory, "step4_alert_levels_POI_*.npy"))
+        if alert_levels_POI_file:
+            alert_levels_POI = np.load(alert_levels_POI_file[0], allow_pickle=True).item()
+            self.set_result('step4', 'pois_alert_levels', alert_levels_POI)
+
+        hazard_curves_file = glob.glob(os.path.join(resultDataDirectory, "step3_hazard_curves_percentiles_*.npy"))
+        if hazard_curves_file:
+            hc = np.load(hazard_curves_file[0], allow_pickle=True).item()
+            self.set_result('step3', 'hc_d', hc)
+
+        alert_levels_FCP_file = glob.glob(os.path.join(resultDataDirectory, "step4_alert_levels_POI_*.npy"))
+        if alert_levels_FCP_file:
+            alert_levels_FCP = np.load(alert_levels_FCP_file[0], allow_pickle=True).item()
+            pass
+            #self.set_result('step4', 'pois_alert_levels', alert_levels_POI)
+    

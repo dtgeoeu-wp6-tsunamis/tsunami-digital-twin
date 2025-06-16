@@ -98,14 +98,16 @@ def greens_law(hmax, depth):
     """
     """
     amplification = np.zeros((len(hmax)))
-    ind = np.where(depth < 1.0)[0]
+    ind1 = np.where(depth < 1.0)[0]
+    ind2 = np.where(depth > 1000.0)[0]  #dart
     # depth[ind] = 1.0
-    if len(ind) > 0:
+    if len(ind1) > 0:
         print("WARNING: At least one depth is < 1 m. "
               "If these points are inland is OK, otherwise please check "
               "if in your file depth is positive offshore. ")
     amplification = hmax*depth**(1.0/4.0)
-    amplification[ind] = -9999
+    amplification[ind1] = -9999
+    amplification[ind2] = hmax[ind2]
     return amplification
     
 
