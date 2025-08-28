@@ -138,4 +138,4 @@ If you have run out of energy or time for your project, put a note at the top of
 
 ### License
 This project is licensed under the Non-Profit Open Software License version 3.0 (NPOSL-3.0).  
-See the [LICENSE](./LICENSE) file for details.
+See the [LICENSE](./LICENSE.txt) file for details.
